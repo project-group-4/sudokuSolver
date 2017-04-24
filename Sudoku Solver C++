@@ -1,198 +1,104 @@
-#include <iostream>
-#include <fstream>
-#include <string>
+import java.util.Scanner;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
-using namespace std;
+public class sudokuSolver {
+	public static void main(String[] args) {
+        int[][] matrix = parseProblem("samplesudoku5.txt");
+        writeMatrix(matrix);
+        if (solve(0,0,matrix))    // solves in place
+            writeMatrix(matrix);
+        else
+            System.out.println("NONE");
+    }
 
-//Prints a solid straight Line
-void printLine() {
+    static boolean solve(int i, int j, int[][] cells) {
+        if (i == 9) {
+            i = 0;
+            if (++j == 9)
+                return true;
+        }
+        if (cells[i][j] != 0)  // skip filled cells
+            return solve(i+1,j,cells);
 
-	for (int i = 0; i < 25; i++)
-		cout << "-";
-	cout << endl;
+        for (int val = 1; val <= 9; ++val) {
+            if (legal(i,j,val,cells)) {
+                cells[i][j] = val;
+                if (solve(i+1,j,cells))
+                    return true;
+            }
+        }
+        cells[i][j] = 0; // reset on backtrack
+        return false;
+    }
 
-}
+    static boolean legal(int i, int j, int val, int[][] cells) {
+        for (int k = 0; k < 9; ++k)  // row
+            if (val == cells[k][j])
+                return false;
 
-//Prints out board in sudoku grid
-void printBoard(int Board[][9]) {
+        for (int k = 0; k < 9; ++k) // col
+            if (val == cells[i][k])
+                return false;
 
-	for (int x = 0; x < 9; x++) {
-		if (x == 0 || x == 3 || x == 6)
-			printLine();
-		cout << "| ";
-		for (int y = 0; y < 9; y++) {
-			cout << Board[x][y] << " ";
-			if (y == 2 || y == 5 || y == 8)
-				cout << "| ";
+        int boxRowOffset = (i / 3)*3;
+        int boxColOffset = (j / 3)*3;
+        for (int k = 0; k < 3; ++k) // box
+            for (int m = 0; m < 3; ++m)
+                if (val == cells[boxRowOffset+k][boxColOffset+m])
+                    return false;
+
+        return true; // no violations, so it's legal
+    }
+    static void writeMatrix(int[][] solution) {
+        for (int i = 0; i < 9; ++i) {
+            if (i % 3 == 0)
+                System.out.println(" -----------------------");
+            for (int j = 0; j < 9; ++j) {
+                if (j % 3 == 0) System.out.print("| ");
+                System.out.print(solution[i][j] == 0
+                                 ? " "
+                                 : Integer.toString(solution[i][j]));
+
+                System.out.print(' ');
+            }
+            System.out.println("|");
+        }
+        System.out.println(" -----------------------");
+    }
+
+    static int[][] parseProblem(String fileName) {
+		Scanner sudokuFileIn = null;
+		int[] puzzle = new int[81];
+		int[][] problem = new int[9][9];
+		int i = 0;
+		int j;
+		
+		try{
+			sudokuFileIn = new Scanner(new FileInputStream(fileName));	
 		}
-		cout << endl;
-	}
-	printLine();
-
-}
-
-//checks if the board is solved
-bool finish(int Board[][9]) {
-
-	int sum = 0;
-
-	for (int x = 0; x < 9; x++) {
-		for (int y = 0; y < 9; y++) {
-			sum += Board[x][y];
+		catch (FileNotFoundException e){
+			System.out.println("File not found.");
+			System.exit(0);
 		}
-	}
-
-	if (sum == 405)
-		return true;
-	else
-		return false;
-
-}
-
-/*Figures out which box the program is looking at in the format:
-1 2 3
-4 5 6
-7 8 9
-*/
-int Box(int x, int y) {
-
-	int box = 0;
-
-	if (y < 3) {
-		box = 1;
-	}
-	else if (y >= 3 && y < 6)
-		box = 2;
-	else if (y >= 6)
-		box = 3;
-
-	if (x < 3)
-		box += 0;
-	else if (x >= 3 && x < 6)
-		box += 3;
-	else if (x >= 6)
-		box += 6;
-
-	return box;
-
-}
-
-//Gets the top left cord of the box X position
-int BoxCordY(int i) {
-	int x;
-
-	if (i == 1 || i == 4 || i == 7)
-		x = 0;
-	else if (i == 2 || i == 5 || i == 8)
-		x = 3;
-	else
-		x = 6;
-	return x;
-}
-
-//Gets the top left cord of the box Y position
-int BoxCordX(int i) {
-	int x;
-
-	if (i == 1 || i == 2 || i == 3)
-		x = 0;
-	else if (i == 4 || i == 5 || i == 6)
-		x = 3;
-	else
-		x = 6;
-	return x;
-}
-
-//checks if it is legal to put number in a spot
-bool checkLegal(int Board[][9], int Num, int x, int y) {
-	int notLegal = 0;
-
-	for (int i = 0; i < 9; i++) {
-		if (Board[i][y] == Num)
-			notLegal++;
-	}
-
-	for (int i = 0; i < 9; i++) {
-		if (Board[x][i] == Num)
-			notLegal++;
-	}
-
-	for (int i = 0; i < 3; i++) {
-		for (int a = 0; a < 3; a++) {
-			if (Board[BoxCordX(Box(x, y)) + i][BoxCordY(Box(x, y)) + a] == Num)
-				notLegal++;
+		
+		while (sudokuFileIn.hasNextInt()){
+			puzzle[i++] = sudokuFileIn.nextInt();
 		}
-	}
-
-	if (Board[x][y] > 0)
-		notLegal++;
-
-	if (notLegal > 0)
-		return false;
-	else
-		return true;
-}
-
-int main() {
-
-	int board[9][9];
-	int position[2];
-	int x = 0;
-	int y = 0;
-	int temp = 0;
-
-	string line;
-	
-	ifstream myfile("samplesudoku1.txt");
-	
-	if (myfile.is_open()) {
-		while (getline(myfile, line)) {
-			for (int i = 0; i < line.size(); i++) {
-				if (isdigit(line[i])) {
-					temp = x / 2;
-					board[temp][y] = line[i]-48;
-					y++;
-				}
+		for (j=0; j<81; j++){
+			//System.out.print(puzzle[j]);
+			problem[j/9][j%9] = puzzle[j];		
+		}
+/*		System.out.println();
+		for(i=0;i<9;i++){
+			for(j=0;j<9;j++){
+				System.out.print(problem[i][j]);
 			}
-			y = 0;
-			x++;
+			System.out.println();
 		}
-		myfile.close();
-		x = 0;
-		y = 0;
+*/		sudokuFileIn.close();
+		return problem;
 	}
-	else cout << "Unable to open file";
-
-	int Num = 0;
-
-	printBoard(board);
-
-	while (finish(board) == 0) {
-
-		for (int a = 1; a < 10; a++) {
-			for (int i = 1; i < 10; i++) {
-				temp = 0;
-				for (int x = 0; x < 3; x++) {
-					for (int y = 0; y < 3; y++) {
-						if (checkLegal(board, a, BoxCordX(i) + x, BoxCordY(i) + y) == 1) {
-							temp++;
-							if (temp == 1) {
-								position[0] = BoxCordX(i) + x;
-								position[1] = BoxCordY(i) + y;
-							}
-						}
-					}
-				}
-				if (temp == 1) {
-					board[position[0]][position[1]] = a;
-				}
-			}
-		}
-	}
-
-	cout << endl << endl;
-
-	system("pause");
-
-	return 0;
+	
 }
+
