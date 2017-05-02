@@ -165,8 +165,6 @@ int main() {
 
 	int Num = 0;
 
-	printBoard(board);
-
 	while (finish(board) == 0) {
 
 		for (int a = 1; a < 10; a++) {
@@ -190,6 +188,8 @@ int main() {
 		}
 	}
 
+	printBoard(board);
+	
 	cout << endl << endl;
 
 	system("pause");
